@@ -53,6 +53,26 @@ class HoraExtraRepository:
                 cursor.close()
                 con.close()
                 print("Conexão ao MySQL foi encerrada")
+   
+  
+    def inserirSaida(self,hora_atual, data_Saida, idUsuario, usuarioLogado):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            query = "INSERT INTO ezsys.dp_horaextra (`he_saida`,`data`, `funcionario_id`,`funcionario`) VALUES (%s, %s, %s, %s);"
+            values = ( hora_atual, data_Saida, idUsuario, usuarioLogado)
+            cursor.execute(query, values)
+            con.commit()
+            print(cursor.rowcount, "registro(s) atualizado(s)")
+        except mysql.connector.Error as error:
+            print("Falha ao atualizar saída na tabela dp_horaextra: {}".format(error))
+        finally:
+            if (con.is_connected()):
+                cursor.close()
+                con.close()
+                print("Conexão ao MySQL foi encerrada")  
+  
     def obterValorEntrada(self, senha):
         # PEGAR APENAS O VALOR DA ENTRADA PELO LOGIN
         db = DbConnection()
@@ -70,6 +90,19 @@ class HoraExtraRepository:
         except Error as e:
             print(e)
             return None
+   
+    def existeRegistroDeEntrada(self, usuario_id, data):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT COUNT(*) FROM ezsys.dp_horaextra WHERE funcionario_id = %s AND data = %s AND he_entrada IS NOT NULL", (usuario_id, data))
+            count = cursor.fetchone()[0]
+            db.closeConn(cursor)
+            return count > 0
+        except Error as e:
+            print(e)
+            return False        
         
     def obterValorSaida(self, senha):
         # PEGAR APENAS O VALOR DA ENTRADA PELO LOGIN
@@ -89,6 +122,19 @@ class HoraExtraRepository:
         except Error as e:
             print(e)
             return None 
+        
+    def existeRegistroDeSaida(self, usuario_id, data):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT COUNT(*) FROM ezsys.dp_horaextra WHERE funcionario_id = %s AND data = %s AND he_saida IS NOT NULL", (usuario_id, data))
+            count = cursor.fetchone()[0]
+            db.closeConn(cursor)
+            return count > 0
+        except Error as e:
+            print(e)
+            return False             
         
         
         
@@ -136,8 +182,8 @@ class HoraExtraRepository:
             cursor = con.cursor()
             #cursor.execute("UPDATE ezsys.dp_horaextra_autoriza t INNER JOIN ezsys.dp_funcionarios f ON t.funcionario = f.usuario_sistema SET t.codigo = f.codigo;")        
             cursor.execute("drop table if exists ezsys.dp_horaextra_tolera;")
-            cursor.execute("create table ezsys.dp_horaextra_tolera (id int primary key not null, nome varchar (100),codigo int, data date ,aut varchar(1), hr_atual time, hr_solicit time, tolera time, tolera_inicio time as (timediff(hr_solicit,tolera)), tolera_fim time as (SEC_TO_TIME(TIME_TO_SEC(hr_solicit) + TIME_TO_SEC(tolera))));")      
-            insert=cursor.execute("insert into ezsys.dp_horaextra_tolera (id, nome, data) values (%s, %s, %s);", values)                 
+            cursor.execute("create table ezsys.dp_horaextra_tolera (id int primary key not null, nome varchar (100), data date , data_sys TIMEstamp DEFAULT CURRENT_TIMEstamp, hr_atual time, data_atual date, hr_solicit time, entrasai varchar(1), aut VARCHAR (1), tolera time,  tolera_inicio time as (timediff(hr_solicit,tolera)), tolera_fim time as (SEC_TO_TIME(TIME_TO_SEC(hr_solicit) + TIME_TO_SEC(tolera))), passa varchar(1), motivo varchar (200));")      
+            cursor.execute("insert into ezsys.dp_horaextra_tolera (id, nome, data) values (%s, %s, %s);", values)                 
             con.commit()
             print(cursor.rowcount, "registro(s) atualizado(s)")
         except mysql.connector.Error as error:
@@ -157,35 +203,161 @@ class HoraExtraRepository:
             con = db.getConn()
             cursor = con.cursor()
             #cursor.execute("UPDATE ezsys.dp_horaextra_autoriza t INNER JOIN ezsys.dp_funcionarios f ON t.funcionario = f.usuario_sistema SET t.codigo = f.codigo;")         
-            cursor.execute("UPDATE dp_horaextra_tolera t INNER JOIN ezsys.dp_funcionarios f ON t.nome = f.usuario_sistema SET t.codigo = f.codigo;")  
+            cursor.execute("update ezsys.dp_horaextra_tolera set hr_atual = cast(data_sys as time);")
+            cursor.execute("update ezsys.dp_horaextra_tolera set data_atual = cast(data_sys as date) ;")  
             cursor.execute("UPDATE dp_horaextra_tolera t INNER JOIN ezsys.dp_funcionarios f ON t.nome = f.usuario_sistema SET t.nome = f.nome ;")                     
-            cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN dp_horaextra_autoriza AS tb2 ON tb1.nome = tb2.funcionario and tb1.data = tb2.data_he SET tb1.hr_solicit = tb2.hora where tb2.entrasai='E';") 
-            ver=cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN dp_horaextra_autoriza AS tb2 set tb1.aut = tb2.aut; ;")               
-            cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN config_dept AS tb2 SET tb1.tolera = tb2.tempo_tolerancia ;")      
+            cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN dp_horaextra_autoriza AS tb2 ON tb1.nome = tb2.funcionario and tb1.data = tb2.data_he SET tb1.hr_solicit = tb2.hora , tb1.entrasai = tb2.entrasai, tb1.aut=tb2.aut;")          
+            cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN config_dept AS tb2 SET tb1.tolera = tb2.tempo_tolerancia ;")  
+            cursor.execute("update ezsys.dp_horaextra_tolera set passa = 'A' where data_atual=data and aut='A' and hr_atual >= tolera_inicio and hr_atual <= tolera_fim;")
             con.commit()
-            print(cursor.rowcount, "registro(s) atualizado(s)",ver)
+            print(cursor.rowcount, "registro(s) atualizado(s)")
         except mysql.connector.Error as error:
             print("Falha ao atualizar saída na tabela dp_horaextra: {}".format(error))
         finally:
             if (con.is_connected()):
                 cursor.close()
                 con.close()
-                print("Conexão ao MySQL foi encerrada")            
-
-    def obtervalordeautorizado(self, nome,data):
+                print("Conexão ao MySQL foi encerrada")       
+                           
+    def obtervalordeautorizado(self):
         db = DbConnection()
         try:
             con = db.getConn()
             cursor = con.cursor()
-            cursor.execute("UPDATE dp_horaextra_tolera t INNER JOIN ezsys.dp_funcionarios f ON t.nome = f.usuario_sistema SET t.nome = f.nome ;")   
-            cursor.execute('SELECT aut FROM ezsys.dp_horaextra_tolera WHERE nome = %s AND data = %s',(nome,data))
+            cursor.execute("SELECT passa FROM ezsys.dp_horaextra_tolera WHERE passa = 'A'")
             ver = cursor.fetchone()
             print(ver)
             db.closeConn(cursor)    
-            return ver
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return            
+   
+    def Selecionarmensagem3(self,nome):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            valores = (nome,)
+            cursor = con.cursor()
+            cursor.execute("SELECT hr_solicit FROM ezsys.dp_horaextra_tolera where nome=  %s",valores)
+            ver = cursor.fetchone()
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return               
+        
+    def Selecionarmensagem1(self,nome):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            valores = (nome,)
+            cursor = con.cursor()
+            cursor.execute("SELECT data FROM ezsys.dp_horaextra_tolera WHERE nome = %s", valores)
+            ver = cursor.fetchone()
+            db.closeConn(cursor)    
+            return ver if ver else None
         except Error as e :
             print(e)
             return              
+        
+    def Selecionarmensagem2(self,nome):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            valores = (nome,)
+            cursor = con.cursor()
+            cursor.execute("SELECT aut FROM ezsys.dp_horaextra_tolera where nome=  %s",valores)
+            ver = cursor.fetchone()
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return        
+        
+    def obtervalordata(self):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT data_atual FROM ezsys.dp_horaextra_tolera")
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return             
+        
+    def obtervalorentradaousaida(self, usuario):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT entrasai FROM ezsys.dp_horaextra_tolera WHERE id = %s", (usuario,))
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e:
+            print(e)
+            return None            
+        
+    def obtervalorautorizacao(self):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT aut FROM ezsys.dp_horaextra_tolera WHERE aut  = 'A'")
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return                       
+        
+    def obtervalorHora1(self):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT hr_solicit FROM ezsys.dp_horaextra_tolera")
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return          
+        
+    def obtervalorHora2(self):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT tolera_inicio FROM ezsys.dp_horaextra_tolera")
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return              
+        
+    def obtervalorHora3(self):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT tolera_fim FROM ezsys.dp_horaextra_tolera")
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e :
+            print(e)
+            return               
    
     def SelecionartempodeTolerancia(self):
         db = DbConnection()
@@ -200,6 +372,8 @@ class HoraExtraRepository:
         except Error as e :
             print(e)
             return               
+        
+ 
          
         
     def atualizardados(self):
@@ -221,3 +395,6 @@ class HoraExtraRepository:
                 print("Conexão ao MySQL foi encerrada")        
                                  
 pass
+
+
+            

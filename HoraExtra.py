@@ -96,73 +96,69 @@ def Entrar():
     hora_atual = datetime.now().time()
     loginService = LoginService()
     usuarioLogado = loginService.realizarLoginComSenha(senha)
-    
-    
-
 
     if usuarioLogado is None or not hasattr(usuarioLogado, 'getusuarioid'):
         messagebox.showerror('Erro', 'Credenciais de login e senha inválidas.')
         return
+
     horaExtraService.criartempodeTolerancia(usuarioLogado.getusuarioid(), usuarioLogado.getNome(), data_Entrada)    
     horaExtraService.obtervalordetempodetolerancia()
     autorizado = str(horaExtraService.obtervalordeautorizado())
-    Hora1=horaExtraService.obtervalorHora1()
-    
-    data1=horaExtraService.obtervalordata()
+    Hora1 = horaExtraService.obtervalorHora1()
+    data1 = horaExtraService.obtervalordata()
     data_formatada = data1.strftime("%d/%m/%Y")
-    autorizacao=horaExtraService.obtervalorautorizacao()
-    Hora1=horaExtraService.obtervalorHora1()      
-    Hora2=horaExtraService.obtervalorHora2()   
-    Hora3=horaExtraService.obtervalorHora3()             
-        # Verificar as mensagens através de um SELECT
+    autorizacao = horaExtraService.obtervalorautorizacao()
+    Hora1 = horaExtraService.obtervalorHora1()      
+    Hora2 = horaExtraService.obtervalorHora2()   
+    Hora3 = horaExtraService.obtervalorHora3()
+
+        # Verificar se o usuário está autorizado a registrar entrada ou saída
     if autorizado == autorizacao:
         entrada_ou_saida = horaExtraService.obtervalorentradaousaida(usuarioLogado.getusuarioid())
 
         if entrada_ou_saida == 'ENTRADA':
             if horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
-                messagebox.showerror('Erro', 'Já existe um registro de entrada para a data atual.')
-                return     
-            else:       
+               messagebox.showerror('Erro', 'Já existe um registro de entrada e saída para a data atual.')
+            else:
                 idUsuario = usuarioLogado.getusuarioid()
                 horaExtraService.InserirHoraExtra(hora_atual, data_Entrada, idUsuario, usuarioLogado.getNome())
                 messagebox.showinfo('Entrada', f'{usuarioLogado.getNome()}, Registro efetuado com sucesso')
                 horaExtraService.atualizardados()
-                PassEntry.delete(0, 'end')     
-     
+                PassEntry.delete(0, 'end')
+
         elif entrada_ou_saida == 'SAIDA':
-            if horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
+            if horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada):
+                messagebox.showerror('Erro', 'Já existe um registro de saída para a data atual.')
+                PassEntry.delete(0, 'end')
+                
+            elif horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
+                if horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada):           
                     idUsuario = usuarioLogado.getusuarioid()
                     horaExtraService.alterarHoraExtra(hora_atual, data_Entrada, idUsuario)
-                    messagebox.showinfo('Atualização de Saída', f'{usuarioLogado.getNome()}, Registro de saída atualizado com sucesso')
+                    messagebox.showinfo('Entrada', f'{usuarioLogado.getNome()}, Registro de entrada alterado com sucesso')
                     horaExtraService.atualizardados()
-                    PassEntry.delete(0, 'end')
-            
-            elif  horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada):     
-                    idUsuario = usuarioLogado.getusuarioid()
-                    horaExtraService.InserirSaida(hora_atual, data_Entrada, idUsuario, usuarioLogado.getNome())
-                    messagebox.showinfo('Saída', f'{usuarioLogado.getNome()}, Registro efetuado com sucesso')
-                    horaExtraService.atualizardados()
-                    PassEntry.delete(0, 'end')      
-            else:          
-                    horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada)
-                    messagebox.showerror('Erro', 'Já existe um registro de saída para a data atual.')
-                    PassEntry.delete(0, 'end')                       
+                    PassEntry.delete(0, 'end')    
+            else:
+                idUsuario = usuarioLogado.getusuarioid()
+                horaExtraService.InserirSaida(hora_atual, data_Entrada, idUsuario, usuarioLogado.getNome())
+                messagebox.showinfo('Saída', f'{usuarioLogado.getNome()}, Registro de saída efetuado com sucesso')
+                horaExtraService.atualizardados()
+                PassEntry.delete(0, 'end')
     else:
-        mensagem1 = horaExtraService.Selecionarmensagem1(usuarioLogado.getNome())  # Implemente essa função no serviço e no repositório
-        mensagem2 = horaExtraService.Selecionarmensagem2(usuarioLogado.getNome())  # Implemente essa função no serviço e no repositório
+        mensagem2 = horaExtraService.Selecionarmensagem2(usuarioLogado.getNome())
         mensagem3 = horaExtraService.Selecionarmensagem3(usuarioLogado.getNome())
-        if mensagem1  != data_Entrada:
-            messagebox.showinfo("NÃO AUTORIZADO", 'NÃO EXISTE SOLICITAÇÃO PARA ESTE USUÁRIO NESTA DATA',icon='error')
-            PassEntry.delete(0, 'end')             
-        elif mensagem2  != autorizacao:
-            messagebox.showinfo("NÃO AUTORIZADO",f"EXISTE SOLICITAÇÃO NÃO AUTORIZADA PARA ESTE USUÁRIO NESTA DATA: {data_formatada}",icon='error')
-            PassEntry.delete(0, 'end')             
+
+        if mensagem2 != autorizacao:
+            messagebox.showinfo("NÃO AUTORIZADO", f"EXISTE SOLICITAÇÃO NÃO AUTORIZADA PARA ESTE USUÁRIO NESTA DATA: {data_formatada}", icon='error')
+            PassEntry.delete(0, 'end')
+
         elif mensagem3:
-            messagebox.showinfo("NÃO AUTORIZADO", f"EXISTE SOLITITAÇÃO AUTORIZADA PARA ÀS: {Hora1}, "+f"PODENDO ENTRAR ENTRE {Hora2} E {Hora3}", icon='error')
-            PassEntry.delete(0, 'end')                 
-
-        # Exibir as mensagens em caixas de diálogo
-
+            messagebox.showinfo("NÃO AUTORIZADO", f"EXISTE SOLICITAÇÃO AUTORIZADA PARA ÀS: {Hora1}, PODENDO ENTRAR ENTRE {Hora2} E {Hora3}", icon='error')
+            PassEntry.delete(0, 'end')
+            
+        else:
+            messagebox.showinfo("NÃO AUTORIZADO", 'NÃO EXISTE SOLICITAÇÃO PARA ESTE USUÁRIO NESTA DATA', icon='error')
+            PassEntry.delete(0, 'end')             
 
 LoginButton = ttk.Button(DepbottomFrame, text="Entrar", width=18, command=Entrar)
 LoginButton.bind("<KeyPress>", lambda e: Entrar() if e.char == '\r' else None) 
@@ -175,4 +171,6 @@ def Sair():
 ExitButton = ttk.Button(DepbottomFrame, text="Sair", width=18, command=Sair)
 ExitButton.place(x=710,y=320)
 
-janDep.mainloop()      
+janDep.mainloop()             
+       
+       

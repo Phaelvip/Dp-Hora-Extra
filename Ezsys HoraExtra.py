@@ -85,16 +85,9 @@ def Entrar():
     if not hasattr(usuarioLogado, 'getusuarioid'):
         messagebox.showerror('Erro', 'Credenciais de login e senha inválidas.')
         return
-    horaExtraService.criartempodeTolerancia()
+ 
     isEntradaOuSaida = horaExtraService.isEntradaOuSaida(usuarioLogado.getusuarioid())
 
-    atualizarfuncionario = horaExtraService.obtervalordetempodetolerancia(usuarioLogado.getusuarioid(), usuarioLogado.getNome(), data_Entrada)
-    autorizado = horaExtraService.obtervalordeautorizado(usuarioLogado.getNome(), data_Entrada)
-
-    if autorizado != 'S':
-        messagebox.showerror('Erro', 'Login não autorizado, favor procurar o responsável')
-        print(autorizado)
-        return
 
 
     if isEntradaOuSaida == "ENTRADA":

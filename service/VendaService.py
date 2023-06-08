@@ -14,7 +14,7 @@ import pandas as xlswriter
 
 import pandas as  pd
 import datetime
-from entity.dto.RelatorioVenda import RelatorioVenda
+
 import locale
 
 
