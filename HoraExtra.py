@@ -114,11 +114,12 @@ def Entrar():
 
         # Verificar se o usuário está autorizado a registrar entrada ou saída
     if autorizado == autorizacao:
-        entrada_ou_saida = horaExtraService.obtervalorentradaousaida(usuarioLogado.getusuarioid())
+        entrada_ou_saida = horaExtraService.obtervalorentradaousaida321312(usuarioLogado.getusuarioid())
 
         if entrada_ou_saida == 'ENTRADA':
             if horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
-               messagebox.showerror('Erro', 'Já existe um registro de entrada e saída para a data atual.')
+                messagebox.showerror('Erro', 'Já existe um registro de entrada para a data atual.')
+                return
             else:
                 idUsuario = usuarioLogado.getusuarioid()
                 horaExtraService.InserirHoraExtra(hora_atual, data_Entrada, idUsuario, usuarioLogado.getNome())
@@ -128,21 +129,21 @@ def Entrar():
 
         elif entrada_ou_saida == 'SAIDA':
             if horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada):
-                messagebox.showerror('Erro', 'Já existe um registro de saída para a data atual.')
+                idUsuario = usuarioLogado.getusuarioid()
+                horaExtraService.alterarHoraExtra(hora_atual, data_Entrada, idUsuario)
+                messagebox.showinfo('Atualização de Saída', f'{usuarioLogado.getNome()}, Registro de saída atualizado com sucesso')
+                horaExtraService.atualizardados()
                 PassEntry.delete(0, 'end')
-                
+
             elif horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
-                if horaExtraService.existeRegistroDeSaida(usuarioLogado.getusuarioid(), data_Entrada):           
-                    idUsuario = usuarioLogado.getusuarioid()
-                    horaExtraService.alterarHoraExtra(hora_atual, data_Entrada, idUsuario)
-                    messagebox.showinfo('Entrada', f'{usuarioLogado.getNome()}, Registro de entrada alterado com sucesso')
-                    horaExtraService.atualizardados()
-                    PassEntry.delete(0, 'end')    
-            else:
                 idUsuario = usuarioLogado.getusuarioid()
                 horaExtraService.InserirSaida(hora_atual, data_Entrada, idUsuario, usuarioLogado.getNome())
-                messagebox.showinfo('Saída', f'{usuarioLogado.getNome()}, Registro de saída efetuado com sucesso')
+                messagebox.showinfo('Saída', f'{usuarioLogado.getNome()}, Registro efetuado com sucesso')
                 horaExtraService.atualizardados()
+                PassEntry.delete(0, 'end')
+
+            else:
+                messagebox.showerror('Erro', 'Já existe um registro de saída para a data atual.')
                 PassEntry.delete(0, 'end')
     else:
         mensagem2 = horaExtraService.Selecionarmensagem2(usuarioLogado.getNome())

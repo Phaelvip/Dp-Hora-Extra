@@ -182,7 +182,7 @@ class HoraExtraRepository:
             cursor = con.cursor()
             #cursor.execute("UPDATE ezsys.dp_horaextra_autoriza t INNER JOIN ezsys.dp_funcionarios f ON t.funcionario = f.usuario_sistema SET t.codigo = f.codigo;")        
             cursor.execute("drop table if exists ezsys.dp_horaextra_tolera;")
-            cursor.execute("create table ezsys.dp_horaextra_tolera (id int primary key not null, nome varchar (100), data date , data_sys TIMEstamp DEFAULT CURRENT_TIMEstamp, hr_atual time, data_atual date, hr_solicit time, entrasai varchar(1), aut VARCHAR (1), tolera time,  tolera_inicio time as (timediff(hr_solicit,tolera)), tolera_fim time as (SEC_TO_TIME(TIME_TO_SEC(hr_solicit) + TIME_TO_SEC(tolera))), passa varchar(1), motivo varchar (200));")      
+            cursor.execute("create table ezsys.dp_horaextra_tolera (id int primary key not null, nome varchar (100), data date ,  data_sys TIMEstamp DEFAULT CURRENT_TIMEstamp, hr_atual time, data_atual date, hr_solicit time, entrasai varchar(1), aut VARCHAR (1),  tolera time,  tolera_inicio time as (timediff(hr_solicit,tolera)), tolera_fim time as (SEC_TO_TIME(TIME_TO_SEC(hr_solicit) + TIME_TO_SEC(tolera))), passa varchar(1), motivo varchar (200), lancado varchar (1) DEFAULT 'N');")      
             cursor.execute("insert into ezsys.dp_horaextra_tolera (id, nome, data) values (%s, %s, %s);", values)                 
             con.commit()
             print(cursor.rowcount, "registro(s) atualizado(s)")
@@ -209,6 +209,8 @@ class HoraExtraRepository:
             cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN dp_horaextra_autoriza AS tb2 ON tb1.nome = tb2.funcionario and tb1.data = tb2.data_he SET tb1.hr_solicit = tb2.hora , tb1.entrasai = tb2.entrasai, tb1.aut=tb2.aut;")          
             cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN config_dept AS tb2 SET tb1.tolera = tb2.tempo_tolerancia ;")  
             cursor.execute("update ezsys.dp_horaextra_tolera set passa = 'A' where data_atual=data and aut='A' and hr_atual >= tolera_inicio and hr_atual <= tolera_fim;")
+            cursor.execute("UPDATE dp_horaextra_tolera AS tb1 INNER JOIN dp_horaextra_autoriza AS tb2 ON tb1.nome = tb2.funcionario and tb1.data = tb2.data_he and tb1.entrasai=tb2.entrasai and tb1.passa = 'A' SET tb2.lancado = 'X' ; ")
+            
             con.commit()
             print(cursor.rowcount, "registro(s) atualizado(s)")
         except mysql.connector.Error as error:
@@ -294,14 +296,29 @@ class HoraExtraRepository:
         try:
             con = db.getConn()
             cursor = con.cursor()
-            cursor.execute("SELECT entrasai FROM ezsys.dp_horaextra_tolera WHERE id = %s", (usuario,))
+            data_atual = datetime.today().strftime('%Y-%m-%d')
+            cursor.execute("SELECT entrasai FROM ezsys.dp_horaextra_tolera WHERE id = %s AND data = %s", (usuario ,data_atual)) 
             ver = cursor.fetchone()
             print(ver)
             db.closeConn(cursor)    
             return ver[0] if ver else None
         except Error as e:
             print(e)
-            return None            
+            return None    
+        
+    def obtervalorentradaousaida12312(self, usuario):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT entrasai FROM ezsys.dp_horaextra_tolera WHERE id = %s and entrasai = 'E' or 'S'", (usuario,))
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e:
+            print(e)
+            return None                   
         
     def obtervalorautorizacao(self):
         db = DbConnection()

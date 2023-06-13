@@ -39,6 +39,19 @@ class HoraExtraService:
         else:
             return None 
         
+    def obtervalorentradaousaida321312(self, usuario_id, data):
+        valor_entrada = self.__HoraExtraDao.existeRegistroDeEntrada(usuario_id, data)
+        valor_saida = self.__HoraExtraDao.existeRegistroDeSaida(usuario_id, data)
+        
+        if valor_entrada == 'E':
+            if valor_saida == 'S':
+                return 'SAIDA'
+            else:
+                return 'ENTRADA'
+        elif valor_entrada == 'S':
+            return 'SAIDA'
+        else:
+            return None                
         
     def isSaida(self, idUsuario):
         retorno = self.__HoraExtraDao.obterValorSaida(idUsuario)
