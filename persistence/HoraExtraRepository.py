@@ -301,7 +301,21 @@ class HoraExtraRepository:
             return ver[0] if ver else None
         except Error as e:
             print(e)
-            return None            
+            return None    
+        
+    def obtervalorentradaousaida12312(self, usuario):
+        db = DbConnection()
+        try:
+            con = db.getConn()
+            cursor = con.cursor()
+            cursor.execute("SELECT entrasai FROM ezsys.dp_horaextra_tolera WHERE id = %s and entrasai = 'E' or 'S'", (usuario,))
+            ver = cursor.fetchone()
+            print(ver)
+            db.closeConn(cursor)    
+            return ver[0] if ver else None
+        except Error as e:
+            print(e)
+            return None                   
         
     def obtervalorautorizacao(self):
         db = DbConnection()

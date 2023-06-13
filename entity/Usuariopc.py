@@ -1,8 +1,9 @@
 class Usuario:
     
-    def __init__(self, usuarioid, nome, senha, permissoes):
+    def __init__(self, usuarioid, usuario, nome, senha, permissoes):
 
         self.__usuarioid = usuarioid
+        self.__usuario=usuario
         self.__nome = nome
         self.__senha = senha
         self.__permissoes = permissoes
@@ -13,6 +14,9 @@ class Usuario:
     
     def getNome(self):
         return self.__nome
+    
+    def getusuario(self):
+        return self.__usuario    
     
     def getSenha(self):
         return self.__senha

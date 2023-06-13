@@ -108,8 +108,11 @@ def Entrar():
     autorizado = str(horaExtraService.obtervalordeautorizado())
     Hora1=horaExtraService.obtervalorHora1()
     
-    data1=horaExtraService.obtervalordata()
-    data_formatada = data1.strftime("%d/%m/%Y")
+    data1 = horaExtraService.obtervalordata()
+    if data1 is None:
+        messagebox.showerror('Erro', 'Não foi possível obter a data.')
+    else:
+        data_formatada = data1.strftime("%d/%m/%Y")
     autorizacao=horaExtraService.obtervalorautorizacao()
     Hora1=horaExtraService.obtervalorHora1()      
     Hora2=horaExtraService.obtervalorHora2()   

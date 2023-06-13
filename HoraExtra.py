@@ -115,7 +115,7 @@ def Entrar():
         # Verificar se o usuário está autorizado a registrar entrada ou saída
     if autorizado == autorizacao:
         entrada_ou_saida = horaExtraService.obtervalorentradaousaida(usuarioLogado.getusuarioid())
-
+        horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada)
         if entrada_ou_saida == 'ENTRADA':
             if horaExtraService.existeRegistroDeEntrada(usuarioLogado.getusuarioid(), data_Entrada):
                messagebox.showerror('Erro', 'Já existe um registro de entrada e saída para a data atual.')
